@@ -533,8 +533,12 @@ target_compile_definitions(luajit PRIVATE ${LJ_DEFINITIONS})
 
 set(luajit_headers lauxlib.h lua.h luaconf.h luajit.h lualib.h)
 install(FILES ${luajit_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/luajit)
+add_library(libluajit::libluajit ALIAS libluajit)
 install(TARGETS libluajit
+    EXPORT libluajit
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/libluajit
+    )
 
 install(TARGETS luajit DESTINATION "${CMAKE_INSTALL_BINDIR}")
