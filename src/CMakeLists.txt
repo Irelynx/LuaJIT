@@ -240,6 +240,8 @@ if ("${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
   set(TARGET_OS_FLAGS ${TARGET_OS_FLAGS} -D LUAJIT_OS=LUAJIT_OS_LINUX)
 elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
   set(TARGET_OS_FLAGS ${TARGET_OS_FLAGS} -D LUAJIT_OS=LUAJIT_OS_WINDOWS)
+elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "iOS")
+  set(TARGET_OS_FLAGS ${TARGET_OS_FLAGS} -D LUAJIT_OS=LUAJIT_OS_OSX -D TARGET_OS_IPHONE=1)
 elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
   set(TARGET_OS_FLAGS ${TARGET_OS_FLAGS} -D LUAJIT_OS=LUAJIT_OS_OSX)
 elseif ("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
@@ -317,12 +319,23 @@ if (NOT CMAKE_CROSSCOMPILING)
 else()
   set(BUILDVM_PATH ${CMAKE_CURRENT_BINARY_DIR}/buildvm/${BUILDVM_EXE})
 
+  find_program(DEFAULT_HOST_C_COMPILER "gcc")
+  find_program(DEFAULT_HOST_CXX_COMPILER "g++")
+  find_program(DEFAULT_HOST_CMAKE_COMMAND "cmake")
+  mark_as_advanced(DEFAULT_HOST_C_COMPILER DEFAULT_HOST_CXX_COMPILER DEFAULT_HOST_CMAKE_COMMAND)
+
+  set(HOST_CMAKE_COMMAND ${DEFAULT_HOST_CMAKE_COMMAND} CACHE STRING "Bypass the host CMake command")
+  set(HOST_C_COMPILER ${DEFAULT_HOST_C_COMPILER} CACHE STRING "Bypass the host C compiler command")
+  set(HOST_CXX_COMPILER ${DEFAULT_HOST_CXX_COMPILER} CACHE STRING "Bypass the host C++ compiler command")
+
   make_directory(${CMAKE_CURRENT_BINARY_DIR}/buildvm)
 
   add_custom_command(OUTPUT ${BUILDVM_PATH}
-    COMMAND ${CMAKE_COMMAND} ${CMAKE_CURRENT_SOURCE_DIR}/host/cmake/buildvm
-            -DEXTRA_COMPILER_FLAGS_FILE=${BUILDVM_COMPILER_FLAGS_PATH}
-    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/buildvm
+    COMMAND ${HOST_CMAKE_COMMAND} -E env CC="${HOST_C_COMPILER}" CXX="${HOST_CXX_COMPILER}"
+            ${HOST_CMAKE_COMMAND} ${CMAKE_CURRENT_SOURCE_DIR}/host/cmake/buildvm
+                                  -DEXTRA_COMPILER_FLAGS_FILE=${BUILDVM_COMPILER_FLAGS_PATH}
+    COMMAND ${HOST_CMAKE_COMMAND} -E env CC="${HOST_C_COMPILER}" CXX="${HOST_CXX_COMPILER}"
+            ${HOST_CMAKE_COMMAND} --build ${CMAKE_CURRENT_BINARY_DIR}/buildvm
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/host/cmake/buildvm/CMakeLists.txt
     DEPENDS buildvm_arch_h
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/buildvm)
@@ -449,6 +462,7 @@ set(luajit_sources
     lj_opt_sink.c
     lj_opt_split.c
     lj_parse.c
+    lj_prng.c
     lj_profile.c
     lj_record.c
     lj_snap.c
